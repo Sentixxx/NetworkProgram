@@ -1,5 +1,6 @@
 #ifndef LOG_H
 #define LOG_H
+#define DEBUG
 
 #include <ctime>
 #include <iomanip>

@@ -1,32 +1,40 @@
-#include <iostream>
-#include <pcap.h>
-#include <format>
+#include "device.h"
+#include "logging.h"
 
-int main() {
-    pcap_if_t *all_devices;
-    
-    int i = 0;
-    char err_buf[PCAP_ERRBUF_SIZE];
-    if(pcap_findalldevs_ex(PCAP_SRC_IF_STRING, nullptr, &all_devices, err_buf) == -1) {
-        std::cerr << "Error in pcap_findalldevs_ex: " << err_buf << std::endl;
-        return -1;
-    }
 
-    for(const pcap_if_t *d = all_devices; d != nullptr; d = d->next) {
-        std::cout << i << ". " << "Device: " << d->name << std::endl;
-        i++;
-        if(d->description) {
-            std::cout << std::format("({})\n", d->description);
-        } else {
-            std::cout << "(No description available)\n";
-        }
-    }
+int main(int argc, char *argv[]) {
+    // get_device_list();
 
-    if(i == 0) {
-        std::cout << "No interfaces found! Make sure Npcap is installed.\n";
+    if(argc < 2) {
+        LOG_ERROR("Usage: " + std::string(argv[0]) + " <device_name>");
         return 1;
     }
 
+    char error_buffer[PCAP_ERRBUF_SIZE];
+
+    pcap_if_t *all_devices = nullptr;
+    get_device_list(&all_devices);
+    
+    pcap_if_t *device = find_device(&all_devices, argv[1]);
+
+    if(device == nullptr) {
+        LOG_ERROR("Device not found");
+        pcap_freealldevs(all_devices);
+        return 1;
+    }
+
+    LOG_INFO("Starting capture on device: " + std::string(device->name));
+    pcap_t *handle = pcap_open_live(device->name, 65535, 1 , 1000, error_buffer);
+    if(handle == nullptr) {
+        LOG_ERROR("Failed to open device: " + std::string(error_buffer));
+        pcap_freealldevs(all_devices);
+        return 1;
+    }
+
+    pcap_loop(handle, 0, device_handler, nullptr);
+
+    pcap_close(handle);
     pcap_freealldevs(all_devices);
+
     return 0;
 }
