@@ -27,6 +27,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(SOURCES
     main.cpp
     src/device.cpp
+    src/header.cpp
 )
 
 # 添加头文件目录
